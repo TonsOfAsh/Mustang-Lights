@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<title>Mustang Lights</title>
+<style>
+  :root{
+    --bg:#0b0d10; --card:#151920; --card2:#1c212a; --line:#272d38;
+    --text:#eef1f5; --muted:#8b95a5; --accent:#e63946; --ok:#3ddc84; --warn:#ffb020;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  body{padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px)}
+  header{position:sticky;top:0;z-index:5;background:rgba(11,13,16,.92);backdrop-filter:blur(8px);
+    padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  header h1{font-size:19px;margin:0;letter-spacing:.3px;flex:1}
+  header h1 span{color:var(--accent)}
+  .pill{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--card2);color:var(--muted)}
+  .pill.on{color:#04140a;background:var(--ok)}
+  main{padding:12px;display:flex;flex-direction:column;gap:12px;max-width:560px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+  .card h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:600}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1}
+  button{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);
+    border-radius:12px;padding:11px 14px;cursor:pointer;touch-action:manipulation}
+  button:active{transform:scale(.97)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.ghost{background:transparent}
+  button.small{padding:7px 10px;font-size:13px;border-radius:10px}
+  button.sel{outline:2px solid var(--accent);outline-offset:1px}
+  button:disabled{opacity:.4}
+  .big{flex:1;padding:16px;font-size:16px;font-weight:600}
+  input[type=text],input[type=time],select{font:inherit;color:var(--text);background:var(--card2);
+    border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  label.lbl{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;margin:10px 0 4px}
+  .muted{color:var(--muted);font-size:13px}
+  .note{font-size:12.5px;color:var(--muted);margin-top:8px}
+  .banner{background:#3a1d0a;border:1px solid #6b3a12;color:#ffd3a8;border-radius:12px;padding:12px;font-size:14px}
+  .banner.err{background:#3a0f14;border-color:#6b1d26;color:#ffc2c8}
+  /* lights */
+  .light{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--card2);margin-bottom:8px}
+  .dot{width:10px;height:10px;border-radius:50%;background:#555;flex:none}
+  .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .dot.busy{background:var(--warn)}
+  .light input[type=text]{flex:1;padding:6px 8px}
+  .chk{width:22px;height:22px;accent-color:var(--accent);flex:none}
+  .swatch-now{width:22px;height:22px;border-radius:6px;border:1px solid var(--line);flex:none}
+  /* swatches */
+  .swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  .sw{aspect-ratio:1;border-radius:50%;border:2px solid rgba(255,255,255,.12);padding:0}
+  .sw.sel{outline:3px solid #fff;outline-offset:2px}
+  .picker{display:flex;align-items:center;gap:10px;margin-top:12px}
+  .picker input[type=color]{width:52px;height:40px;border:none;background:none;padding:0}
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin-bottom:10px}
+  .tabs button{flex:1;padding:9px;font-size:14px}
+  .tabs button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .grid2 button{text-align:left;font-size:14px;padding:11px 12px}
+  .hidden{display:none!important}
+  /* presets */
+  .preset{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .preset .apply{flex:1;text-align:left;display:flex;align-items:center;gap:10px}
+  .pv{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid var(--line)}
+  /* log */
+  #log{font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;background:#07090c;border:1px solid var(--line);
+    border-radius:10px;padding:8px;height:150px;overflow:auto;white-space:pre-wrap;color:#a9b4c4}
+  details summary{cursor:pointer;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
+  details[open] summary{margin-bottom:10px}
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .switch{position:relative;width:48px;height:28px;flex:none}
+  .switch input{opacity:0;width:0;height:0}
+  .switch span{position:absolute;inset:0;background:#333a46;border-radius:99px;transition:.2s}
+  .switch span:before{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + span{background:var(--accent)}
+  .switch input:checked + span:before{transform:translateX(20px)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Mustang <span>Lights</span></h1>
+  <div id="connPill" class="pill">0 connected</div>
+</header>
+
+<main>
+  <div id="unsupported" class="banner err hidden">
+    Bluetooth isn't available here. Open this page in <b>Chrome on Android</b>, at an <b>https://</b> address, with Bluetooth and Location turned on.
+  </div>
+  <div id="patternBanner" class="banner hidden">
+    <b id="patternName">Pattern</b> is running from your phone. Keep this page open with the screen on.
+    <div class="row" style="margin-top:8px"><button class="small" id="stopPatternBtn">Stop pattern</button></div>
+  </div>
+
+  <!-- LIGHTS -->
+  <section class="card">
+    <h2>Lights</h2>
+    <div id="lightList"><div class="muted" id="noLights">No lights connected yet. Close HappyLighting first, then tap below for each controller.</div></div>
+    <div class="row" style="margin-top:4px">
+      <button class="primary grow" id="addLightBtn">+ Connect a light</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="small ghost" id="addAnyBtn">Add other device (underglow, etc.)</button>
+    </div>
+    <div class="note">Checked lights get every command. Uncheck one to control the other alone. Tap <b>Flash</b> to see which side is which.</div>
+  </section>
+
+  <!-- POWER -->
+  <section class="card">
+    <h2>Power</h2>
+    <div class="row">
+      <button class="big" id="onBtn">On</button>
+      <button class="big" id="offBtn">Off</button>
+    </div>
+  </section>
+
+  <!-- COLOR -->
+  <section class="card">
+    <h2>Color</h2>
+    <div class="swatches" id="swatches"></div>
+    <div class="picker">
+      <input type="color" id="colorPicker" value="#ff0000">
+      <div class="muted">Custom color</div>
+    </div>
+    <label class="lbl"><span>Brightness</span><span id="briVal">100%</span></label>
+    <input type="range" id="bri" min="5" max="100" value="100">
+  </section>
+
+  <!-- PATTERNS -->
+  <section class="card">
+    <h2>Patterns</h2>
+    <div class="tabs">
+      <button id="tabSynced" class="active">Synced (phone)</button>
+      <button id="tabBuiltin">Built-in (controller)</button>
+    </div>
+    <div id="paneSynced">
+      <div class="grid2" id="syncedList"></div>
+      <label class="lbl"><span>Speed</span><span id="pSpeedVal">50</span></label>
+      <input type="range" id="pSpeed" min="1" max="100" value="50">
+      <div class="note">These run from your phone, so both sides stay perfectly in sync and can do left/right effects. Patterns marked ● use your selected color. The page needs to stay open.</div>
+    </div>
+    <div id="paneBuiltin" class="hidden">
+      <div class="grid2" id="builtinList"></div>
+      <label class="lbl"><span>Speed</span><span id="mSpeedVal">50</span></label>
+      <input type="range" id="mSpeed" min="1" max="100" value="50">
+      <div class="note">These run on the controllers themselves, so they keep going after you close the page. The two sides may drift out of sync.</div>
+    </div>
+  </section>
+
+  <!-- PRESETS -->
+  <section class="card">
+    <h2>Presets</h2>
+    <div id="presetList"></div>
+    <div class="row" style="margin-top:6px">
+      <input type="text" id="presetName" class="grow" placeholder="Name (e.g. Night blue)" maxlength="30">
+      <button id="savePresetBtn">Save current</button>
+    </div>
+  </section>
+
+  <!-- DAY / NIGHT -->
+  <section class="card">
+    <h2>Day / Night auto</h2>
+    <div class="toggle">
+      <div>Apply automatically when lights connect</div>
+      <label class="switch"><input type="checkbox" id="autoOn"><span></span></label>
+    </div>
+    <label class="lbl"><span>Switch based on</span></label>
+    <select id="autoMethod" style="width:100%">
+      <option value="sun">Sunrise / sunset (uses your location)</option>
+      <option value="times">Fixed times</option>
+    </select>
+    <div id="sunBox">
+      <div class="row" style="margin-top:8px">
+        <button class="small" id="locBtn">Use my location</button>
+        <div class="muted grow" id="sunInfo">No location set</div>
+      </div>
+    </div>
+    <div id="timesBox" class="hidden">
+      <div class="row" style="margin-top:8px">
+        <div class="grow"><div class="muted">Night starts</div><input type="time" id="nightStart" value="17:30" style="width:100%"></div>
+        <div class="grow"><div class="muted">Day starts</div><input type="time" id="dayStart" value="07:00" style="width:100%"></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="grow"><div class="muted">Day preset</div><select id="dayPreset" style="width:100%"></select></div>
+      <div class="grow"><div class="muted">Night preset</div><select id="nightPreset" style="width:100%"></select></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="muted grow" id="phaseInfo"></div>
+      <button class="small" id="applyAutoBtn">Apply now</button>
+    </div>
+    <div class="note">While this page is open, it also switches at sunset/sunrise (or your set times).</div>
+  </section>
+
+  <!-- TEST PANEL -->
+  <section class="card">
+    <details id="testDetails">
+      <summary>Test panel &amp; log</summary>
+      <div class="row">
+        <input type="text" id="rawHex" class="grow" placeholder="Hex bytes, e.g. 56FF00FF00F0AA" autocapitalize="characters" spellcheck="false">
+        <button id="rawSendBtn">Send</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="small" data-raw="56FF00FF00F0AA">Magenta</button>
+        <button class="small" data-raw="560000FF00F0AA">Blue</button>
+        <button class="small" data-raw="CC2333">On</button>
+        <button class="small" data-raw="CC2433">Off</button>
+        <button class="small" data-raw="EF0177">Read status</button>
+      </div>
+      <div class="row" style="margin:8px 0"><span class="muted grow">Log</span><button class="small ghost" id="clearLogBtn">Clear</button></div>
+      <div id="log"></div>
+    </details>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+/* ---------- Protocol (Triones-style controllers, e.g. DREAM-xxxx) ---------- */
+const SVC_WRITE = 0xffd5, CHR_WRITE = 0xffd9;
+const SVC_NOTIFY = 0xffd0, CHR_NOTIFY = 0xffd4;
+
+const Cmd = {
+  color: (r, g, b) => [0x56, r, g, b, 0x00, 0xF0, 0xAA],
+  on:    () => [0xCC, 0x23, 0x33],
+  off:   () => [0xCC, 0x24, 0x33],
+  mode:  (m, s) => [0xBB, m, s, 0x44],
+  status:() => [0xEF, 0x01, 0x77],
+};
+
+const BUILTIN_MODES = [
+  [0x25, "Rainbow fade"], [0x38, "Rainbow jump"], [0x30, "Rainbow strobe"],
+  [0x26, "Red pulse"], [0x27, "Green pulse"], [0x28, "Blue pulse"],
+  [0x29, "Yellow pulse"], [0x2A, "Cyan pulse"], [0x2B, "Purple pulse"],
+  [0x2C, "White pulse"], [0x2D, "Red ↔ green"], [0x2E, "Red ↔ blue"],
+  [0x2F, "Green ↔ blue"], [0x31, "Red strobe"], [0x32, "Green strobe"],
+  [0x33, "Blue strobe"], [0x34, "Yellow strobe"], [0x35, "Cyan strobe"],
+  [0x36, "Purple strobe"], [0x37, "White strobe"],
+];
+
+/* slider 1..100 (100 = fastest) -> controller speed byte 31..1 (1 = fastest) */
+const modeSpeedByte = v => Math.max(1, Math.min(31, Math.round(31 - (v - 1) * 30 / 99)));
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const hex = arr => Array.from(arr, b => b.toString(16).padStart(2, "0").toUpperCase()).join(" ");
+const rgbToHex = ([r, g, b]) => "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
+const hexToRgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+function hsv(h, s, v) {
+  h = ((h % 360) + 360) % 360;
+  const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0]; else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x]; else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c]; else [r, g, b] = [c, 0, x];
+  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+}
+const scale = (rgb, k) => rgb.map(c => Math.round(c * k));
+function parseHex(str) {
+  const s = str.replace(/0x/gi, "").replace(/[^0-9a-f]/gi, "");
+  if (!s.length || s.length % 2) return null;
+  const out = [];
+  for (let i = 0; i < s.length; i += 2) out.push(parseInt(s.slice(i, i + 2), 16));
+  return out;
+}
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("ml_" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("ml_" + k, JSON.stringify(v)); } catch {} },
+};
+
+function log(msg) {
+  const el = $("log");
+  const t = new Date().toLocaleTimeString([], { hour12: false });
+  el.textContent += `[${t}] ${msg}\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+/* ---------- Light (one BLE controller) ---------- */
+class Light {
+  constructor(device) {
+    this.device = device;
+    this.key = device.name || device.id;
+    this.char = null;
+    this.connected = false;
+    this.connecting = false;
+    this.queue = [];          // ordered commands
+    this.frame = null;        // latest animation frame (older ones are dropped)
+    this.busy = false;
+    this.lastRgb = null;
+    this.manualDisconnect = false;
+    device.addEventListener("gattserverdisconnected", () => this.onDisconnect());
+  }
+  get label() { return names[this.key] || this.key; }
+  get included() { return included[this.key] !== false; }
+
+  async connect() {
+    this.connecting = true; render();
+    try {
+      const server = await this.device.gatt.connect();
+      const svc = await server.getPrimaryService(SVC_WRITE);
+      this.char = await svc.getCharacteristic(CHR_WRITE);
+      try {
+        const ns = await server.getPrimaryService(SVC_NOTIFY);
+        const nc = await ns.getCharacteristic(CHR_NOTIFY);
+        await nc.startNotifications();
+        nc.addEventListener("characteristicvaluechanged", e =>
+          log(`${this.label} ← ${hex(new Uint8Array(e.target.value.buffer))}`));
+      } catch (e) { log(`${this.label}: no status channel (${e.message})`); }
+      this.connected = true;
+      this.lastRgb = null;
+      log(`${this.label} connected`);
+    } finally {
+      this.connecting = false; render();
+    }
+  }
+
+  onDisconnect() {
+    this.connected = false; this.char = null; this.busy = false;
+    this.queue = []; this.frame = null;
+    log(`${this.label} disconnected`);
+    render();
+    if (!this.manualDisconnect) this.autoReconnect();
+  }
+
+  async autoReconnect() {
+    for (let i = 0; i < 3 && !this.connected && lights.includes(this); i++) {
+      await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+      if (this.connected || !lights.includes(this)) return;
+      try { await this.connect(); onLightConnected(this); return; }
+      catch (e) { log(`${this.label}: reconnect failed (${e.message})`); }
+    }
+  }
+
+  send(bytes) { this.queue.push(bytes); this.pump(); }
+  sendFrame(bytes) { this.frame = bytes; this.pump(); }
+  clearFrames() { this.frame = null; }
+
+  async pump() {
+    if (this.busy || !this.char) return;
+    this.busy = true;
+    try {
+      while (this.char && (this.queue.length || this.frame)) {
+        let b;
+        if (this.queue.length) b = this.queue.shift();
+        else { b = this.frame; this.frame = null; }
+        const data = new Uint8Array(b);
+        if (this.char.writeValueWithoutResponse) await this.char.writeValueWithoutResponse(data);
+        else await this.char.writeValue(data);
+        if (!animating) log(`${this.label} → ${hex(data)}`);
+      }
+    } catch (e) {
+      log(`${this.label}: write failed (${e.message})`);
+    } finally {
+      this.busy = false;
+    }
+  }
+}
+
+/* ---------- State ---------- */
+let lights = [];
+const names = store.get("names", {});
+const included = store.get("included", {});
+let brightness = store.get("brightness", 100);
+let current = store.get("current", { kind: "color", rgb: [255, 0, 0] }); // last applied look
+
+const targets = () => lights.filter(l => l.connected && l.included);
+function sendAll(bytes) {
+  const t = targets();
+  if (!t.length) { toastNoLights(); return; }
+  t.forEach(l => l.send(bytes));
+}
+function sendColorAll(rgb, asFrame = false) {
+  const out = scale(rgb, brightness / 100);
+  targets().forEach(l => {
+    if (asFrame) l.sendFrame(Cmd.color(...out)); else l.send(Cmd.color(...out));
+    l.lastRgb = out;
+  });
+}
+let lastToast = 0;
+function toastNoLights() {
+  if (Date.now() - lastToast < 3000) return;
+  lastToast = Date.now();
+  log("No connected lights are checked.");
+  alertBanner("Connect a light first (and make sure it's checked).");
+}
+let bannerTimer;
+function alertBanner(msg) {
+  let b = $("tmpBanner");
+  if (!b) {
+    b = document.createElement("div"); b.id = "tmpBanner"; b.className = "banner";
+    document.querySelector("main").prepend(b);
+  }
+  b.textContent = msg; b.classList.remove("hidden");
+  clearTimeout(bannerTimer); bannerTimer = setTimeout(() => b.classList.add("hidden"), 4000);
+}
+
+/* ---------- Synced (phone-driven) patterns ---------- */
+const RED = [255, 0, 0], BLUE = [0, 40, 255], OFF = [0, 0, 0];
+const PALETTE = [[255,0,0],[255,90,0],[255,200,0],[0,255,0],[0,255,200],[0,60,255],[150,0,255],[255,0,140]];
+const frac = x => x - Math.floor(x);
+
+/* fn(t seconds, index, count, speed 0..1, baseColor) -> [r,g,b] */
+const PATTERNS = {
+  rainbow:   { name: "Rainbow",           fn: (t, i, n, s) => hsv(t * (20 + s * 340), 1, 1) },
+  wave:      { name: "Rainbow wave",      fn: (t, i, n, s) => hsv(t * (20 + s * 340) + i * 360 / Math.max(n, 2), 1, 1) },
+  cycle:     { name: "Color jump",        fn: (t, i, n, s) => PALETTE[Math.floor(t * (0.3 + s * 4)) % PALETTE.length] },
+  chase:     { name: "Color chase L↔R",   fn: (t, i, n, s) => PALETTE[(Math.floor(t * (0.3 + s * 4)) + i * 2) % PALETTE.length] },
+  police:    { name: "Police",            fn: (t, i, n, s) => {
+                  const f = 0.6 + s * 2.4;
+                  const flashOn = Math.floor(t * f * 6) % 2 === 0;
+                  const col = (Math.floor(t * f) + i) % 2 === 0 ? RED : BLUE;
+                  return flashOn ? col : OFF; } },
+  breathe:   { name: "Breathe ●",         usesColor: true, fn: (t, i, n, s, c) =>
+                  scale(c, 0.04 + 0.96 * (0.5 - 0.5 * Math.cos(2 * Math.PI * t * (0.12 + s * 1.2)))) },
+  strobe:    { name: "Strobe ●",          usesColor: true, fn: (t, i, n, s, c) =>
+                  frac(t * (1 + s * 7)) < 0.5 ? c : OFF },
+  alternate: { name: "Alternate L↔R ●",   usesColor: true, fn: (t, i, n, s, c) =>
+                  (Math.floor(t * (0.5 + s * 5.5)) + i) % 2 === 0 ? c : OFF },
+};
+
+let animating = null;   // { key, start }
+let animTimer = null;
+let wakeLock = null;
+const TICK_MS = 45;
+
+function patternSpeed() { return ($("pSpeed").value - 1) / 99; }
+
+function startPattern(key) {
+  stopPattern(false);
+  if (!targets().length) { toastNoLights(); return; }
+  const p = PATTERNS[key];
+  animating = { key, start: performance.now() };
+  targets().forEach(l => l.send(Cmd.on()));
+  animTimer = setInterval(() => {
+    const t = (performance.now() - animating.start) / 1000;
+    const tl = targets(), n = tl.length, s = patternSpeed();
+    const base = current.baseRgb || pickedRgb;
+    tl.forEach((l, i) => {
+      const rgb = scale(p.fn(t, i, n, s, base), brightness / 100);
+      if (!l.lastRgb || rgb[0] !== l.lastRgb[0] || rgb[1] !== l.lastRgb[1] || rgb[2] !== l.lastRgb[2]) {
+        l.sendFrame(Cmd.color(...rgb));
+        l.lastRgb = rgb;
+      }
+    });
+  }, TICK_MS);
+  setCurrent({ kind: "pattern", pattern: key, speed: +$("pSpeed").value, baseRgb: p.usesColor ? pickedRgb.slice() : undefined });
+  $("patternName").textContent = p.name;
+  $("patternBanner").classList.remove("hidden");
+  requestWake();
+  renderSelections();
+}
+
+function stopPattern(updateUi = true) {
+  if (animTimer) clearInterval(animTimer);
+  animTimer = null;
+  const was = animating;
+  animating = null;
+  lights.forEach(l => { l.clearFrames(); l.lastRgb = null; });
+  $("patternBanner").classList.add("hidden");
+  releaseWake();
+  if (updateUi && was) renderSelections();
+}
+
+async function requestWake() {
+  try { if ("wakeLock" in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request("screen"); } catch {}
+}
+function releaseWake() { try { wakeLock && wakeLock.release(); } catch {} wakeLock = null; }
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") { if (animating) { wakeLock = null; requestWake(); } checkAuto(false); }
+});
+
+/* ---------- Looks: apply color / mode / pattern / off ---------- */
+let pickedRgb = (current.kind === "color" && current.rgb) ? current.rgb.slice() : [255, 0, 0];
+
+function setCurrent(c) { current = c; store.set("current", c); }
+
+function applyColor(rgb, asFrame = false) {
+  stopPattern();
+  if (!targets().length) { toastNoLights(); }
+  pickedRgb = rgb.slice();
+  if (!asFrame) targets().forEach(l => l.send(Cmd.on()));
+  sendColorAll(rgb, asFrame);
+  setCurrent({ kind: "color", rgb: rgb.slice() });
+  renderSelections();
+}
+
+function applyMode(mode, speedVal) {
+  stopPattern();
+  if (!targets().length) { toastNoLights(); return; }
+  targets().forEach(l => { l.send(Cmd.on()); l.send(Cmd.mode(mode, modeSpeedByte(speedVal))); });
+  setCurrent({ kind: "mode", mode, speed: speedVal });
+  renderSelections();
+}
+
+function applyOff() {
+  stopPattern();
+  sendAll(Cmd.off());
+  setCurrent({ ...current, off: true });
+}
+function applyOn() {
+  if (current.kind === "pattern" && PATTERNS[current.pattern]) { startPattern(current.pattern); return; }
+  if (current.kind === "mode") { applyMode(current.mode, current.speed); return; }
+  sendAll(Cmd.on());
+  if (current.kind === "color") sendColorAll(current.rgb);
+  setCurrent({ ...current, off: false });
+}
+
+function applyLook(look) {
+  if (!look) return;
+  if (look.kind === "off") return applyOff();
+  if (look.kind === "color") {
+    if (look.brightness) setBrightness(look.brightness);
+    return applyColor(look.rgb);
+  }
+  if (look.kind === "mode") { $("mSpeed").value = look.speed; $("mSpeedVal").textContent = look.speed; return applyMode(look.mode, look.speed); }
+  if (look.kind === "pattern") {
+    if (look.brightness) setBrightness(look.brightness);
+    if (look.baseRgb) pickedRgb = look.baseRgb.slice();
+    $("pSpeed").value = look.speed; $("pSpeedVal").textContent = look.speed;
+    return startPattern(look.pattern);
+  }
+}
+
+function setBrightness(v) {
+  brightness = clamp(+v, 5, 100);
+  $("bri").value = brightness; $("briVal").textContent = brightness + "%";
+  store.set("brightness", brightness);
+}
+
+/* ---------- Presets ---------- */
+const DEFAULT_PRESETS = [
+  { id: "p_off",   name: "Off",              look: { kind: "off" } },
+  { id: "p_red",   name: "Factory red",      look: { kind: "color", rgb: [255, 0, 0], brightness: 100 } },
+  { id: "p_blue",  name: "Night blue",       look: { kind: "color", rgb: [0, 40, 255], brightness: 100 } },
+  { id: "p_pink",  name: "Pink",             look: { kind: "color", rgb: [255, 0, 140], brightness: 100 } },
+  { id: "p_rain",  name: "Rainbow (synced)", look: { kind: "pattern", pattern: "rainbow", speed: 40, brightness: 100 } },
+  { id: "p_rainb", name: "Rainbow (built-in)", look: { kind: "mode", mode: 0x25, speed: 50 } },
+];
+let presets = store.get("presets", null) || DEFAULT_PRESETS;
+
+function lookPreview(look) {
+  if (look.kind === "off") return "#000";
+  if (look.kind === "color") return rgbToHex(look.rgb);
+  if (look.kind === "pattern" && look.baseRgb) return rgbToHex(look.baseRgb);
+  return "conic-gradient(red,yellow,lime,cyan,blue,magenta,red)";
+}
+function lookDesc(look) {
+  if (look.kind === "off") return "Lights off";
+  if (look.kind === "color") return `Color · ${look.brightness || 100}%`;
+  if (look.kind === "mode") return `Built-in · ${(BUILTIN_MODES.find(m => m[0] === look.mode) || [0, "mode"])[1]}`;
+  if (look.kind === "pattern") return `Synced · ${(PATTERNS[look.pattern] || {}).name || look.pattern}`;
+  return "";
+}
+
+function renderPresets() {
+  const list = $("presetList");
+  list.innerHTML = "";
+  presets.forEach(p => {
+    const row = document.createElement("div");
+    row.className = "preset";
+    const btn = document.createElement("button");
+    btn.className = "apply";
+    btn.innerHTML = `<span class="pv"></span><span><div></div><div class="muted"></div></span>`;
+    btn.querySelector(".pv").style.background = lookPreview(p.look);
+    btn.querySelector("span > div").textContent = p.name;
+    btn.querySelector(".muted").textContent = lookDesc(p.look);
+    btn.onclick = () => applyLook(p.look);
+    const del = document.createElement("button");
+    del.className = "small ghost"; del.textContent = "✕"; del.title = "Delete preset";
+    del.onclick = () => {
+      if (presets.length <= 1) return;
+      presets = presets.filter(x => x.id !== p.id);
+      store.set("presets", presets); renderPresets();
+    };
+    row.append(btn, del);
+    list.append(row);
+  });
+  // day/night selects
+  for (const id of ["dayPreset", "nightPreset"]) {
+    const sel = $(id), prev = auto[id];
+    sel.innerHTML = "";
+    presets.forEach(p => { const o = document.createElement("option"); o.value = p.id; o.textContent = p.name; sel.append(o); });
+    sel.value = presets.some(p => p.id === prev) ? prev : (id === "dayPreset" ? "p_off" : "p_red");
+    if (!presets.some(p => p.id === sel.value) && presets[0]) sel.value = presets[0].id;
+  }
+}
+
+function saveCurrentPreset() {
+  const name = $("presetName").value.trim();
+  if (!name) { $("presetName").focus(); return; }
+  let look;
+  if (current.off) look = { kind: "off" };
+  else if (current.kind === "color") look = { kind: "color", rgb: current.rgb, brightness };
+  else if (current.kind === "mode") look = { kind: "mode", mode: current.mode, speed: current.speed };
+  else if (current.kind === "pattern") look = { kind: "pattern", pattern: current.pattern, speed: +$("pSpeed").value, baseRgb: current.baseRgb, brightness };
+  presets.push({ id: "p_" + Date.now().toString(36), name, look });
+  store.set("presets", presets);
+  $("presetName").value = "";
+  renderPresets();
+}
+
+/* ---------- Day / Night ---------- */
+const auto = Object.assign({ on: false, method: "sun", lat: null, lon: null, nightStart: "17:30", dayStart: "07:00", dayPreset: "p_off", nightPreset: "p_red" }, store.get("auto", {}));
+let lastPhase = null;
+
+/* Sunrise / sunset (SunCalc-style approximation) */
+function sunTimes(date, lat, lon) {
+  const rad = Math.PI / 180, dayMs = 86400000, J1970 = 2440588, J2000 = 2451545, J0 = 0.0009;
+  const toDays = d => d.valueOf() / dayMs - 0.5 + J1970 - J2000;
+  const fromJ = j => new Date((j + 0.5 - J1970) * dayMs);
+  const e = rad * 23.4397, lw = rad * -lon, phi = rad * lat;
+  const n = Math.round(toDays(date) - J0 - lw / (2 * Math.PI));
+  const ds = J0 + lw / (2 * Math.PI) + n;
+  const M = rad * (357.5291 + 0.98560028 * ds);
+  const C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+  const L = M + C + rad * 102.9372 + Math.PI;
+  const dec = Math.asin(Math.sin(e) * Math.sin(L));
+  const Jnoon = J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+  const w = Math.acos((Math.sin(rad * -0.833) - Math.sin(phi) * Math.sin(dec)) / (Math.cos(phi) * Math.cos(dec)));
+  if (isNaN(w)) return null;
+  const a = J0 + (w + lw) / (2 * Math.PI) + n;
+  const Jset = J2000 + a + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+  return { sunrise: fromJ(Jnoon - (Jset - Jnoon)), sunset: fromJ(Jset) };
+}
+const toMin = s => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };
+const fmt = d => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+function currentPhase(now = new Date()) {
+  if (auto.method === "sun" && auto.lat != null) {
+    const st = sunTimes(now, auto.lat, auto.lon);
+    if (st) return (now >= st.sunrise && now < st.sunset) ? "day" : "night";
+  }
+  const m = now.getHours() * 60 + now.getMinutes();
+  const ns = toMin(auto.nightStart), dsn = toMin(auto.dayStart);
+  const night = ns > dsn ? (m >= ns || m < dsn) : (m >= ns && m < dsn);
+  return night ? "night" : "day";
+}
+
+function renderAuto() {
+  $("autoOn").checked = auto.on;
+  $("autoMethod").value = auto.method;
+  $("sunBox").classList.toggle("hidden", auto.method !== "sun");
+  $("timesBox").classList.toggle("hidden", auto.method !== "times");
+  $("nightStart").value = auto.nightStart; $("dayStart").value = auto.dayStart;
+  if (auto.lat != null) {
+    const st = sunTimes(new Date(), auto.lat, auto.lon);
+    $("sunInfo").textContent = st ? `Today: sunrise ${fmt(st.sunrise)}, sunset ${fmt(st.sunset)}` : "Sun times unavailable here; using fixed times";
+  } else {
+    $("sunInfo").textContent = auto.method === "sun" ? "No location yet (fixed times used until set)" : "";
+  }
+  const ph = currentPhase();
+  $("phaseInfo").textContent = `Right now: ${ph === "day" ? "☀️ Day" : "🌙 Night"}`;
+}
+function saveAuto() { store.set("auto", auto); renderAuto(); }
+
+function applyPhase(phase) {
+  const id = phase === "day" ? auto.dayPreset : auto.nightPreset;
+  const p = presets.find(x => x.id === id);
+  if (p) { log(`Auto: ${phase} → ${p.name}`); applyLook(p.look); }
+}
+function checkAuto(force) {
+  renderAuto();
+  if (!auto.on || !targets().length) return;
+  const ph = currentPhase();
+  if (force || ph !== lastPhase) { lastPhase = ph; applyPhase(ph); }
+}
+setInterval(() => checkAuto(false), 30000);
+
+function onLightConnected(light) {
+  if (auto.on) {
+    const ph = currentPhase(); lastPhase = ph;
+    const p = presets.find(x => x.id === (ph === "day" ? auto.dayPreset : auto.nightPreset));
+    if (p) { log(`Auto: ${ph} → ${p.name}`); applyLook(p.look); }
+  } else if (animating) {
+    light.send(Cmd.on());
+  }
+}
+
+/* ---------- Connecting ---------- */
+async function addLight(any) {
+  if (!navigator.bluetooth) { $("unsupported").classList.remove("hidden"); return; }
+  let device;
+  try {
+    const opts = any
+      ? { acceptAllDevices: true, optionalServices: [SVC_WRITE, SVC_NOTIFY] }
+      : { filters: [{ namePrefix: "DREAM" }, { services: [SVC_WRITE] }], optionalServices: [SVC_WRITE, SVC_NOTIFY] };
+    device = await navigator.bluetooth.requestDevice(opts);
+  } catch (e) {
+    if (e.name === "NotFoundError") { log("No device chosen."); return; }
+    if (e.name === "SecurityError") {
+      alertBanner("Bluetooth is blocked on this page. Open the page directly in Chrome (its own tab, https address).");
+    } else alertBanner("Couldn't start Bluetooth: " + e.message);
+    log(`requestDevice: ${e.name} ${e.message}`);
+    return;
+  }
+  let light = lights.find(l => l.device.id === device.id);
+  if (!light) { light = new Light(device); lights.push(light); }
+  try {
+    light.manualDisconnect = false;
+    await light.connect();
+    onLightConnected(light);
+  } catch (e) {
+    log(`${light.label}: connect failed (${e.message})`);
+    alertBanner(`Couldn't connect to ${light.label}. Is HappyLighting fully closed?`);
+  }
+  render();
+}
+
+function flashLight(l) {
+  if (!l.connected) return;
+  const back = l.lastRgb;
+  const seq = [[255, 255, 255], [0, 0, 0], [255, 255, 255], [0, 0, 0], [255, 255, 255]];
+  l.send(Cmd.on());
+  seq.forEach((c, i) => setTimeout(() => l.send(Cmd.color(...c)), i * 250));
+  setTimeout(() => {
+    if (animating) { l.lastRgb = null; return; }
+    if (current.kind === "color") l.send(Cmd.color(...scale(current.rgb, brightness / 100)));
+    else if (current.kind === "mode") l.send(Cmd.mode(current.mode, modeSpeedByte(current.speed)));
+    else if (back) l.send(Cmd.color(...back));
+  }, seq.length * 250 + 100);
+}
+
+/* ---------- Rendering ---------- */
+function render() {
+  const list = $("lightList");
+  list.querySelectorAll(".light").forEach(n => n.remove());
+  $("noLights").classList.toggle("hidden", lights.length > 0);
+  lights.forEach(l => {
+    const row = document.createElement("div");
+    row.className = "light";
+    const chk = document.createElement("input");
+    chk.type = "checkbox"; chk.className = "chk"; chk.checked = l.included;
+    chk.onchange = () => { included[l.key] = chk.checked; store.set("included", included); };
+    const dot = document.createElement("div");
+    dot.className = "dot" + (l.connected ? " on" : l.connecting ? " busy" : "");
+    const name = document.createElement("input");
+    name.type = "text"; name.value = l.label; name.maxLength = 24;
+    name.onchange = () => { names[l.key] = name.value.trim() || l.key; store.set("names", names); };
+    const act = document.createElement("button");
+    act.className = "small";
+    if (l.connected) { act.textContent = "Flash"; act.onclick = () => flashLight(l); }
+    else {
+      act.textContent = l.connecting ? "…" : "Reconnect"; act.disabled = l.connecting;
+      act.onclick = async () => { try { l.manualDisconnect = false; await l.connect(); onLightConnected(l); } catch (e) { log(`${l.label}: ${e.message}`); alertBanner(`Couldn't reconnect ${l.label}. Try "Connect a light" again.`); } };
+    }
+    const rm = document.createElement("button");
+    rm.className = "small ghost"; rm.textContent = "✕"; rm.title = "Disconnect & remove";
+    rm.onclick = () => {
+      l.manualDisconnect = true;
+      lights = lights.filter(x => x !== l);
+      try { l.device.gatt.disconnect(); } catch {}
+      render();
+    };
+    row.append(chk, dot, name, act, rm);
+    list.insertBefore(row, $("noLights"));
+  });
+  const n = lights.filter(l => l.connected).length;
+  $("connPill").textContent = `${n} connected`;
+  $("connPill").classList.toggle("on", n > 0);
+}
+
+const SWATCHES = [
+  ["Red", [255, 0, 0]], ["Orange", [255, 70, 0]], ["Amber", [255, 140, 0]], ["Yellow", [255, 220, 0]],
+  ["Green", [0, 255, 0]], ["Mint", [0, 255, 120]], ["Cyan", [0, 255, 255]], ["Ice", [80, 160, 255]],
+  ["Blue", [0, 40, 255]], ["Purple", [140, 0, 255]], ["Pink", [255, 0, 140]], ["White", [255, 255, 255]],
+];
+
+function renderSelections() {
+  document.querySelectorAll(".sw").forEach(b => b.classList.toggle("sel",
+    current.kind === "color" && !current.off && b.dataset.rgb === current.rgb.join(",")));
+  document.querySelectorAll("#syncedList button").forEach(b => b.classList.toggle("sel", !!animating && animating.key === b.dataset.key));
+  document.querySelectorAll("#builtinList button").forEach(b => b.classList.toggle("sel", current.kind === "mode" && +b.dataset.mode === current.mode));
+  $("colorPicker").value = rgbToHex(pickedRgb);
+}
+
+function buildUi() {
+  const sw = $("swatches");
+  SWATCHES.forEach(([n, rgb]) => {
+    const b = document.createElement("button");
+    b.className = "sw"; b.title = n; b.style.background = rgbToHex(rgb); b.dataset.rgb = rgb.join(",");
+    b.onclick = () => {
+      if (animating && PATTERNS[animating.key].usesColor) { pickedRgb = rgb.slice(); current.baseRgb = rgb.slice(); setCurrent(current); renderSelections(); return; }
+      applyColor(rgb);
+    };
+    sw.append(b);
+  });
+  $("colorPicker").addEventListener("input", e => {
+    const rgb = hexToRgb(e.target.value);
+    if (animating && PATTERNS[animating.key].usesColor) { pickedRgb = rgb; current.baseRgb = rgb; return; }
+    applyColor(rgb, true);
+  });
+  $("colorPicker").addEventListener("change", e => {
+    if (animating) { setCurrent(current); return; }
+    applyColor(hexToRgb(e.target.value));
+  });
+
+  $("bri").addEventListener("input", e => {
+    setBrightness(e.target.value);
+    if (!animating && current.kind === "color" && !current.off) sendColorAll(current.rgb, true);
+  });
+
+  const sl = $("syncedList");
+  Object.entries(PATTERNS).forEach(([key, p]) => {
+    const b = document.createElement("button");
+    b.textContent = p.name; b.dataset.key = key;
+    b.onclick = () => startPattern(key);
+    sl.append(b);
+  });
+  const bl = $("builtinList");
+  BUILTIN_MODES.forEach(([mode, name]) => {
+    const b = document.createElement("button");
+    b.textContent = name; b.dataset.mode = mode;
+    b.onclick = () => applyMode(mode, +$("mSpeed").value);
+    bl.append(b);
+  });
+
+  $("pSpeed").addEventListener("input", e => { $("pSpeedVal").textContent = e.target.value; if (animating) { current.speed = +e.target.value; setCurrent(current); } });
+  let mDeb;
+  $("mSpeed").addEventListener("input", e => {
+    $("mSpeedVal").textContent = e.target.value;
+    if (current.kind === "mode") { clearTimeout(mDeb); mDeb = setTimeout(() => applyMode(current.mode, +e.target.value), 150); }
+  });
+
+  $("tabSynced").onclick = () => { $("tabSynced").classList.add("active"); $("tabBuiltin").classList.remove("active"); $("paneSynced").classList.remove("hidden"); $("paneBuiltin").classList.add("hidden"); };
+  $("tabBuiltin").onclick = () => { $("tabBuiltin").classList.add("active"); $("tabSynced").classList.remove("active"); $("paneBuiltin").classList.remove("hidden"); $("paneSynced").classList.add("hidden"); };
+
+  $("onBtn").onclick = applyOn;
+  $("offBtn").onclick = applyOff;
+  $("stopPatternBtn").onclick = () => { stopPattern(); if (current.baseRgb || pickedRgb) applyColor(pickedRgb); };
+  $("addLightBtn").onclick = () => addLight(false);
+  $("addAnyBtn").onclick = () => addLight(true);
+  $("savePresetBtn").onclick = saveCurrentPreset;
+
+  $("autoOn").onchange = e => { auto.on = e.target.checked; saveAuto(); if (auto.on) checkAuto(true); };
+  $("autoMethod").onchange = e => { auto.method = e.target.value; saveAuto(); };
+  $("nightStart").onchange = e => { auto.nightStart = e.target.value || "17:30"; saveAuto(); };
+  $("dayStart").onchange = e => { auto.dayStart = e.target.value || "07:00"; saveAuto(); };
+  $("dayPreset").onchange = e => { auto.dayPreset = e.target.value; saveAuto(); };
+  $("nightPreset").onchange = e => { auto.nightPreset = e.target.value; saveAuto(); };
+  $("applyAutoBtn").onclick = () => { if (!targets().length) return toastNoLights(); lastPhase = currentPhase(); applyPhase(lastPhase); };
+  $("locBtn").onclick = () => {
+    if (!navigator.geolocation) return alertBanner("Location isn't available in this browser.");
+    $("sunInfo").textContent = "Getting location…";
+    navigator.geolocation.getCurrentPosition(
+      pos => { auto.lat = +pos.coords.latitude.toFixed(3); auto.lon = +pos.coords.longitude.toFixed(3); saveAuto(); },
+      err => { $("sunInfo").textContent = "Location denied: " + err.message; },
+      { timeout: 15000, maximumAge: 86400000 });
+  };
+
+  $("rawSendBtn").onclick = () => {
+    const b = parseHex($("rawHex").value);
+    if (!b) { log("Invalid hex. Use pairs like 56 FF 00 FF 00 F0 AA"); return; }
+    stopPattern(); sendAll(b);
+  };
+  document.querySelectorAll("[data-raw]").forEach(btn => btn.onclick = () => { stopPattern(); sendAll(parseHex(btn.dataset.raw)); });
+  $("clearLogBtn").onclick = () => { $("log").textContent = ""; };
+}
+
+/* ---------- Boot ---------- */
+buildUi();
+setBrightness(brightness);
+renderPresets();
+renderAuto();
+render();
+renderSelections();
+if (!navigator.bluetooth) { $("unsupported").classList.remove("hidden"); log("navigator.bluetooth not available."); }
+else log("Ready. Close HappyLighting, then tap “Connect a light”.");
+</script>
+</body>
+</html>
